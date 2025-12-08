@@ -236,6 +236,85 @@ class CardTest : InMemoryAnkiTest() {
         assertThat(ex.message, equalTo("missing template"))
     }
 
+    // ========================================
+    // Tests for currentDeckId() - addresses @NeedsTest annotation
+    // ========================================
+
+    @Test
+    fun currentDeckIdReturnsDidWhenODidIsZero() {
+        // oDid = 0L, did = 12345L  expects 12345L
+        val card = addBasicNote().firstCard()
+        card.oDid = 0L
+        card.did = 12345L
+
+        val result = card.currentDeckId()
+
+        assertEquals(12345L, result)
+    }
+
+    @Test
+    fun currentDeckIdReturnsODidWhenODidIsNotZero() {
+        // oDid = 67890L, did = 12345L , expects 67890L
+        val card = addBasicNote().firstCard()
+        card.oDid = 67890L
+        card.did = 12345L
+
+        val result = card.currentDeckId()
+
+        assertEquals(67890L, result)
+    }
+
+    @Test
+    fun currentDeckIdReturnsODidWhenBothArePositive() {
+        // oDid = 99999L, did = 11111L , expects 99999L (oDid takes priority)
+        val card = addBasicNote().firstCard()
+        card.oDid = 99999L
+        card.did = 11111L
+
+        val result = card.currentDeckId()
+
+        assertEquals(99999L, result)
+    }
+
+    @Test
+    fun currentDeckIdWithFilteredDeckScenario() {
+        // oDid = originalDeckId, did = filteredDeckId , expects originalDeckId
+        val card = addBasicNote().firstCard()
+        val originalDeckId = card.did
+
+        val filteredDeckId = col.decks.id("TestFilteredDeck")
+        card.oDid = originalDeckId
+        card.did = filteredDeckId
+
+        val result = card.currentDeckId()
+
+        assertEquals(originalDeckId, result)
+    }
+
+    @Test
+    fun currentDeckIdWithNormalDeckScenario() {
+        // oDid = 0L, did = normalDeckId , expects normalDeckId
+        val card = addBasicNote().firstCard()
+        val normalDeckId = card.did
+        card.oDid = 0L
+
+        val result = card.currentDeckId()
+
+        assertEquals(normalDeckId, result)
+    }
+
+    @Test
+    fun currentDeckIdWhenBothIdsAreSame() {
+        // oDid = 5555L, did = 5555L , expects 5555L
+        val card = addBasicNote().firstCard()
+        card.oDid = 5555L
+        card.did = 5555L
+
+        val result = card.currentDeckId()
+
+        assertEquals(5555L, result)
+    }
+
     private fun assertNoteOrdinalAre(
         note: Note,
         ords: Array<Int>,
