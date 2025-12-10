@@ -20,7 +20,6 @@ import anki.scheduler.CardAnswer.Rating
 import com.ichi2.anki.libanki.exception.ConfirmModSchemaException
 import com.ichi2.anki.libanki.testutils.InMemoryAnkiTest
 import com.ichi2.anki.libanki.testutils.ext.addNote
-import com.ichi2.anki.libanki.testutils.ext.newNote
 import net.ankiweb.rsdroid.exceptions.BackendInvalidInputException
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.containsString
@@ -28,6 +27,7 @@ import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.hasItemInArray
 import org.hamcrest.Matchers.not
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeThat
 import org.junit.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
