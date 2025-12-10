@@ -20,6 +20,7 @@ import anki.scheduler.CardAnswer.Rating
 import com.ichi2.anki.libanki.exception.ConfirmModSchemaException
 import com.ichi2.anki.libanki.testutils.InMemoryAnkiTest
 import com.ichi2.anki.libanki.testutils.ext.addNote
+import com.ichi2.anki.libanki.testutils.ext.newNote
 import net.ankiweb.rsdroid.exceptions.BackendInvalidInputException
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.containsString
@@ -27,7 +28,6 @@ import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.hasItemInArray
 import org.hamcrest.Matchers.not
 import org.junit.Assert.assertEquals
-import org.junit.Assume.assumeThat
 import org.junit.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
@@ -51,7 +51,7 @@ class CardTest : InMemoryAnkiTest() {
      ******************/
     @Test
     fun test_delete() {
-        val note = col.newNote(col.notetypes.current())
+        val note = col.newNote()
         note.setItem("Front", "1")
         note.setItem("Back", "2")
         col.addNote(note)
@@ -68,7 +68,7 @@ class CardTest : InMemoryAnkiTest() {
     @Test
     @SuppressLint("CheckResult") // col.models.current()!!.id
     fun test_misc_cards() {
-        val note = col.newNote(col.notetypes.current())
+        val note = col.newNote()
         note.setItem("Front", "1")
         note.setItem("Back", "2")
         col.addNote(note)
@@ -79,7 +79,7 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun test_genrem() {
-        val note = col.newNote(col.notetypes.current())
+        val note = col.newNote()
         note.setItem("Front", "1")
         note.setItem("Back", "")
         col.addNote(note)
@@ -114,7 +114,7 @@ class CardTest : InMemoryAnkiTest() {
     fun test_gendeck() {
         val cloze = col.notetypes.byName("Cloze")
         col.notetypes.setCurrent(cloze!!)
-        val note = col.newNote(col.notetypes.current())
+        val note = col.newNote()
         note.setItem("Text", "{{c1::one}}")
         col.addNote(note)
         assertEquals(1, col.cardCount())
@@ -151,30 +151,30 @@ class CardTest : InMemoryAnkiTest() {
         col.notetypes.addTemplate(noteType, tmpl)
         col.notetypes.save(noteType)
         col.notetypes.setCurrent(noteType)
-        var note = col.newNote(noteType)
+        var note = col.newNote()
         note.setItem("A", "foo")
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0, 1))
-        note = col.newNote(noteType)
+        note = col.newNote()
         note.setItem("B", "foo")
         note.setItem("C", "foo")
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0, 1))
-        note = col.newNote(noteType)
+        note = col.newNote()
         note.setItem("B", "foo")
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0))
-        note = col.newNote(noteType)
+        note = col.newNote()
         note.setItem("C", "foo")
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0))
-        note = col.newNote(noteType)
+        note = col.newNote()
         note.setItem("A", "foo")
         note.setItem("B", "foo")
         note.setItem("C", "foo")
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0, 1))
-        note = col.newNote(noteType)
+        note = col.newNote()
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0))
         // First card is generated if no other card
@@ -199,22 +199,22 @@ class CardTest : InMemoryAnkiTest() {
         col.notetypes.addTemplate(noteType, tmpl)
         col.notetypes.save(noteType)
         col.notetypes.setCurrent(noteType)
-        var note = col.newNote(noteType)
+        var note = col.newNote()
         note.setItem("First", "foo")
         note.setItem("AddIfEmpty", "foo")
         note.setItem("Front", "foo")
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0))
-        note = col.newNote(noteType)
+        note = col.newNote()
         note.setItem("First", "foo")
         note.setItem("AddIfEmpty", "foo")
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0))
-        note = col.newNote(noteType)
+        note = col.newNote()
         note.setItem("First", "foo") // ensure first note generated
         col.addNote(note)
         assertNoteOrdinalAre(note, arrayOf(0))
-        note = col.newNote(noteType)
+        note = col.newNote()
         note.setItem("First", "foo")
         note.setItem("Front", "foo")
         col.addNote(note)
