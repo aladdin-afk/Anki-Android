@@ -167,8 +167,6 @@ open class Card : Cloneable {
             originalDeckId = oDid
             flags = this@Card.flags
             customData = this@Card.customData
-            mtimeSecs = mod
-            usn = this@Card.usn
             this@Card.originalPosition?.let { originalPosition = it }
             this@Card.memoryState?.let { memoryState = it }
             this@Card.desiredRetention?.let { desiredRetention = it }
