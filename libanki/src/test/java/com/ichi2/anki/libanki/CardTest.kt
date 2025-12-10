@@ -73,7 +73,7 @@ class CardTest : InMemoryAnkiTest() {
         note.setItem("Back", "2")
         col.addNote(note)
         val c = note.cards()[0]
-        col.notetypes.current.id
+        col.notetypes.current().id
         assertEquals(0, c.template().ord)
     }
 
@@ -84,7 +84,7 @@ class CardTest : InMemoryAnkiTest() {
         note.setItem("Back", "")
         col.addNote(note)
         assertEquals(1, note.numberOfCards())
-        val noteType = col.notetypes.current
+        val noteType = col.notetypes.current()
         // adding a new template should automatically create cards
         var t =
             Notetypes.newTemplate("rev").apply {
@@ -242,7 +242,7 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun currentDeckIdReturnsDidWhenODidIsZero() {
-        // oDid = 0L, did = 12345L → expects 12345L
+        // oDid = 0L, did = 12345L  expects 12345L
         val card = addBasicNote().firstCard()
         card.oDid = 0L
         card.did = 12345L
@@ -254,7 +254,7 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun currentDeckIdReturnsODidWhenODidIsNotZero() {
-        // oDid = 67890L, did = 12345L → expects 67890L
+        // oDid = 67890L, did = 12345L , expects 67890L
         val card = addBasicNote().firstCard()
         card.oDid = 67890L
         card.did = 12345L
@@ -266,7 +266,7 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun currentDeckIdReturnsODidWhenBothArePositive() {
-        // oDid = 99999L, did = 11111L → expects 99999L (oDid takes priority)
+        // oDid = 99999L, did = 11111L , expects 99999L (oDid takes priority)
         val card = addBasicNote().firstCard()
         card.oDid = 99999L
         card.did = 11111L
@@ -278,7 +278,7 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun currentDeckIdWithFilteredDeckScenario() {
-        // oDid = originalDeckId, did = filteredDeckId → expects originalDeckId
+        // oDid = originalDeckId, did = filteredDeckId , expects originalDeckId
         val card = addBasicNote().firstCard()
         val originalDeckId = card.did
 
@@ -293,7 +293,7 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun currentDeckIdWithNormalDeckScenario() {
-        // oDid = 0L, did = normalDeckId → expects normalDeckId
+        // oDid = 0L, did = normalDeckId , expects normalDeckId
         val card = addBasicNote().firstCard()
         val normalDeckId = card.did
         card.oDid = 0L
@@ -305,7 +305,7 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun currentDeckIdWhenBothIdsAreSame() {
-        // oDid = 5555L, did = 5555L → expects 5555L
+        // oDid = 5555L, did = 5555L , expects 5555L
         val card = addBasicNote().firstCard()
         card.oDid = 5555L
         card.did = 5555L
