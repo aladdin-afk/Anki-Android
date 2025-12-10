@@ -112,7 +112,7 @@ timber = "5.0.1"
 # In the past, releases have been published before the changelog
 triplet = "3.13.0"
 turbine = "1.2.1"
-lifecycleProcess = "2.9.3"
+lifecycleProcess = "2.10.0"
 
 [libraries]
 acra-limiter = { module = "ch.acra:acra-limiter", version.ref = "acra" }
