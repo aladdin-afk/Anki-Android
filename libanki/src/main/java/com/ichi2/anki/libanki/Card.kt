@@ -18,7 +18,6 @@
 package com.ichi2.anki.libanki
 
 import androidx.annotation.VisibleForTesting
-import com.ichi2.anki.common.annotations.NeedsTest
 import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.common.utils.ext.ifZero
 import com.ichi2.anki.libanki.TemplateManager.TemplateRenderContext.TemplateRenderOutput
@@ -168,6 +167,8 @@ open class Card : Cloneable {
             originalDeckId = oDid
             flags = this@Card.flags
             customData = this@Card.customData
+            mtimeSecs = mod
+            usn = this@Card.usn
             this@Card.originalPosition?.let { originalPosition = it }
             this@Card.memoryState?.let { memoryState = it }
             this@Card.desiredRetention?.let { desiredRetention = it }
