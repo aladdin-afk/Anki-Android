@@ -237,12 +237,12 @@ class CardTest : InMemoryAnkiTest() {
     }
 
     // ========================================
-    // Tests for functionality which calls currentDeckId() 
+    // Tests for functionality which calls currentDeckId() - addresses @NeedsTest annotation
     // ========================================
 
     @Test
     fun timeLimitUsesCurrentDeckIdForNormalDeck() {
-        // Normal deck (oDid = 0) should use deck id to get time limit
+        // Normal deck (oDid = 0) should use did to get time limit
         val card = addBasicNote().firstCard()
         val deckId = card.did
         card.oDid = 0L
@@ -256,7 +256,7 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun timeLimitUsesCurrentDeckIdForFilteredDeck() {
-        // Move card to filtered deck , now it returns odid 
+        // Move card to filtered deck
         val card = addBasicNote().firstCard()
         val originalDeckId = card.did
         val filteredDeckId = col.decks.id("TestFilteredDeck")
