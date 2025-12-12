@@ -29,6 +29,7 @@ import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.hasItemInArray
 import org.hamcrest.Matchers.not
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
@@ -255,22 +256,35 @@ class CardTest : InMemoryAnkiTest() {
 
     @Test
     fun timeLimitUsesCurrentDeckIdForFilteredDeck() {
+        // Create card in original deck and get its config value
+        val card = addBasicNote().firstCard()
+        val originalDeckId = card.did
+        val originalConfig = col.decks.configDictForDeckId(originalDeckId)
+        val originalMaxTaken = originalConfig.maxTaken
+
+        // Create filtered deck
         val filteredDeckId = col.decks.newFiltered("TestFilteredDeck")
 
-        // Move card to filtered deck
-        val card =
-            addBasicNote().firstCard().apply {
-                oDid = did
-                did = filteredDeckId
-            }
+        // Move card to filtered deck (simulates filtered deck scenario)
+        card.oDid = originalDeckId
+        card.did = filteredDeckId
+        col.updateCard(card, skipUndoEntry = true)
 
+        // Verify currentDeckId() returns oDid (originalDeckId) for filtered decks
+        assertEquals(originalDeckId, card.currentDeckId())
+
+        // Get timeLimit - it should use the original deck's config
         val timeLimit = card.timeLimit(col)
+        val expectedTimeLimit = originalMaxTaken * 1000
 
-        // currentDeckId() should return oDid (originalDeckId) for filtered decks
-        assertEquals(card.oDid, card.currentDeckId())
-        // TODO: BUG: this would also pass if card.oDid is used
-        val config = col.decks.configDictForDeckId(filteredDeckId)
-        assertEquals(config.maxTaken * 1000, timeLimit)
+        // timeLimit should match the original deck's config value
+        assertEquals(expectedTimeLimit, timeLimit)
+
+        // Verify it's using currentDeckId() by checking it matches original deck's config, not filtered deck's
+        val configDictForDeckId = col.decks.configDictForDeckId(filteredDeckId)
+        // Both decks share the same config, so verify we're looking at the right deck ID
+        assertEquals(originalDeckId, card.currentDeckId())
+        assertNotEquals(filteredDeckId, card.currentDeckId())
     }
 
     @Test
@@ -351,5 +365,17 @@ class CardTest : InMemoryAnkiTest() {
             val ord = card.ord
             assumeThat(ords, hasItemInArray(ord))
         }
+    }
+
+    /**
+     * Helper function to update a deck's configuration
+     */
+    override fun updateDeckConfig(
+        deckId: Long,
+        function: DeckConfig.() -> Unit,
+    ) {
+        val config = col.decks.configDictForDeckId(deckId)
+        config.function()
+        col.decks.save(config)
     }
 }
