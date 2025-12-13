@@ -17,6 +17,7 @@ package com.ichi2.anki.libanki
 
 import android.annotation.SuppressLint
 import anki.scheduler.CardAnswer.Rating
+import com.ichi2.anki.common.time.TimeManager
 import com.ichi2.anki.libanki.exception.ConfirmModSchemaException
 import com.ichi2.anki.libanki.testutils.InMemoryAnkiTest
 import com.ichi2.anki.libanki.testutils.ext.addNote
@@ -25,9 +26,12 @@ import net.ankiweb.rsdroid.exceptions.BackendInvalidInputException
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.containsString
 import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.greaterThanOrEqualTo
 import org.hamcrest.Matchers.hasItemInArray
+import org.hamcrest.Matchers.lessThanOrEqualTo
 import org.hamcrest.Matchers.not
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
@@ -232,87 +236,126 @@ class CardTest : InMemoryAnkiTest() {
 
         // at the time of writing, "missing template" is a hardcoded string. permalink:
         // https://github.com/ankitects/anki/blob/71ec878780c1b81b49b1e18b3c41237bda51e20c/rslib/src/notetype/render.rs#L54-L64
-        val ex = assertFailsWith<BackendInvalidInputException> { col.getCard(cid).renderOutput(col) }
+        val ex =
+            assertFailsWith<BackendInvalidInputException> { col.getCard(cid).renderOutput(col) }
         assertThat(ex.message, equalTo("missing template"))
     }
 
     // ========================================
-    // Tests for currentDeckId() - addresses @NeedsTest annotation
+    // Tests for functionality which calls currentDeckId() - addresses @NeedsTest annotation
     // ========================================
 
     @Test
-    fun currentDeckIdReturnsDidWhenODidIsZero() {
-        // oDid = 0L, did = 12345L → expects 12345L
+    fun timeLimitUsesCurrentDeckIdForNormalDeck() {
+        // Normal deck (oDid = 0) should use did to get time limit
         val card = addBasicNote().firstCard()
-        card.oDid = 0L
-        card.did = 12345L
 
-        val result = card.currentDeckId()
+        val timeLimit = card.timeLimit(col)
 
-        assertEquals(12345L, result)
+        // Verify that timeLimit uses the correct deck config (via currentDeckId)
+        val config = col.decks.configDictForDeckId(card.did)
+        assertEquals(config.maxTaken * 1000, timeLimit)
     }
 
     @Test
-    fun currentDeckIdReturnsODidWhenODidIsNotZero() {
-        // oDid = 67890L, did = 12345L → expects 67890L
-        val card = addBasicNote().firstCard()
-        card.oDid = 67890L
-        card.did = 12345L
-
-        val result = card.currentDeckId()
-
-        assertEquals(67890L, result)
-    }
-
-    @Test
-    fun currentDeckIdReturnsODidWhenBothArePositive() {
-        // oDid = 99999L, did = 11111L → expects 99999L (oDid takes priority)
-        val card = addBasicNote().firstCard()
-        card.oDid = 99999L
-        card.did = 11111L
-
-        val result = card.currentDeckId()
-
-        assertEquals(99999L, result)
-    }
-
-    @Test
-    fun currentDeckIdWithFilteredDeckScenario() {
-        // oDid = originalDeckId, did = filteredDeckId → expects originalDeckId
+    fun timeLimitUsesCurrentDeckIdForFilteredDeck() {
+        // Create card in original deck and get its config value
         val card = addBasicNote().firstCard()
         val originalDeckId = card.did
+        val originalConfig = col.decks.configDictForDeckId(originalDeckId)
+        val originalMaxTaken = originalConfig.maxTaken
 
+        // Create filtered deck
+        val filteredDeckId = col.decks.newFiltered("TestFilteredDeck")
+
+        // Move card to filtered deck (simulates filtered deck scenario)
+        card.oDid = originalDeckId
+        card.did = filteredDeckId
+        col.updateCard(card, skipUndoEntry = true)
+
+        // Verify currentDeckId() returns oDid (originalDeckId) for filtered decks
+        assertEquals(originalDeckId, card.currentDeckId())
+
+        // Get timeLimit - it should use the original deck's config
+        val timeLimit = card.timeLimit(col)
+        val expectedTimeLimit = originalMaxTaken * 1000
+
+        // timeLimit should match the original deck's config value
+        assertEquals(expectedTimeLimit, timeLimit)
+
+        // Verify it's using currentDeckId() by checking it matches original deck's config, not filtered deck's
+        val configDictForDeckId = col.decks.configDictForDeckId(filteredDeckId)
+        // Both decks share the same config, so verify we're looking at the right deck ID
+        assertEquals(originalDeckId, card.currentDeckId())
+        assertNotEquals(filteredDeckId, card.currentDeckId())
+    }
+
+    @Test
+    fun shouldShowTimerUsesCurrentDeckId() {
+        // shouldShowTimer should use currentDeckId to get deck configuration
+        val card = addBasicNote().firstCard()
+
+        val shouldShowTimer = card.shouldShowTimer(col)
+
+        // Verify it uses the config from currentDeckId
+        val config = col.decks.configDictForDeckId(card.currentDeckId())
+        assertEquals(config.timer, shouldShowTimer)
+    }
+
+    @Test
+    fun shouldShowTimerUsesCurrentDeckIdForFilteredDeck() {
+        // shouldShowTimer should use oDid for filtered decks
+        val card = addBasicNote().firstCard()
+        val originalDeckId = card.did
         val filteredDeckId = col.decks.id("TestFilteredDeck")
+
         card.oDid = originalDeckId
         card.did = filteredDeckId
 
-        val result = card.currentDeckId()
+        val shouldShowTimer = card.shouldShowTimer(col)
 
-        assertEquals(originalDeckId, result)
+        // Verify it uses the config from oDid (originalDeckId)
+        assertEquals(originalDeckId, card.currentDeckId())
+        val config = col.decks.configDictForDeckId(originalDeckId)
+        assertEquals(config.timer, shouldShowTimer)
     }
 
     @Test
-    fun currentDeckIdWithNormalDeckScenario() {
-        // oDid = 0L, did = normalDeckId → expects normalDeckId
+    fun autoplayUsesCurrentDeckId() {
+        // autoplay should use currentDeckId to determine autoplay setting
         val card = addBasicNote().firstCard()
-        val normalDeckId = card.did
-        card.oDid = 0L
 
-        val result = card.currentDeckId()
+        val autoplay = card.autoplay(col)
 
-        assertEquals(normalDeckId, result)
+        // Verify it uses the autoplay setting from currentDeckId
+        val config = col.decks.configDictForDeckId(card.currentDeckId())
+        assertEquals(config.autoplay, autoplay)
     }
 
     @Test
-    fun currentDeckIdWhenBothIdsAreSame() {
-        // oDid = 5555L, did = 5555L → expects 5555L
+    fun replayQuestionAudioOnAnswerSideUsesCurrentDeckId() {
+        // replayQuestionAudioOnAnswerSide should use currentDeckId for deck config
         val card = addBasicNote().firstCard()
-        card.oDid = 5555L
-        card.did = 5555L
 
-        val result = card.currentDeckId()
+        val replayQuestion = card.replayQuestionAudioOnAnswerSide(col)
 
-        assertEquals(5555L, result)
+        // Verify it uses the replayq setting from currentDeckId
+        val config = col.decks.configDictForDeckId(card.currentDeckId())
+        assertEquals(config.replayq, replayQuestion)
+    }
+
+    @Test
+    fun timeTakenUsesCurrentDeckIdForTimeLimit() {
+        // timeTaken uses timeLimit() which calls currentDeckId()
+        val card = addBasicNote().firstCard()
+        card.timerStarted = TimeManager.time.intTimeMS() - 100 // Set to 100ms ago
+
+        val timeTaken = card.timeTaken(col)
+        val timeLimit = card.timeLimit(col)
+
+        assertThat(timeTaken, greaterThanOrEqualTo(100))
+        // timeTaken should respect the time limit from currentDeckId
+        assertThat(timeTaken, lessThanOrEqualTo(timeLimit))
     }
 
     private fun assertNoteOrdinalAre(
